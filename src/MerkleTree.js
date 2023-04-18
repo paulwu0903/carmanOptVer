@@ -1,6 +1,6 @@
 const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
-const whitelistJSON = require("./whitelist");
+const whitelistJSON = require("./whitelist1");
 
 // 透過 merkletreejs 套件產生 merkle tree
 function getMerkle(whiteList) {
@@ -12,6 +12,7 @@ const whitelistMerkleTree = getMerkle(whitelistJSON);
 
 // 取得 merkle tree 的 root
 const root = whitelistMerkleTree.getRoot();
+console.log("address: ", "0xf69d4A0397201670018E3c45Bf3143f6fF83E528");
 console.log("root", bufferToBytes32(root));
 
 // 取得 proof
@@ -19,7 +20,7 @@ function getProof(address) {
   const leaf = keccak256(address);
   return whitelistMerkleTree.getProof(leaf).map((p) => bufferToBytes32(p.data));
 }
-console.log("proof", getProof("0x9c7B48c4d28F8c8ed2b87c3829c9323941340707"));
+console.log("proof", getProof("0xD6f8d12Af51f38E3df5E1d0A36bFC9C87c6eafD4"));
 
 // 驗證 proof
 function verify(address) {
@@ -33,3 +34,4 @@ function verify(address) {
 function bufferToBytes32(buffer) {
   return "0x" + buffer.toString("hex").padStart(64, "0");
 }
+
