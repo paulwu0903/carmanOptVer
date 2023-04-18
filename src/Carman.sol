@@ -1235,10 +1235,11 @@ abstract contract Ownable is Context {
 }
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "erc721a/contracts/ERC721A.sol";
 
 pragma solidity >=0.7.0 <0.9.0;
 
-contract CarMan is ERC721Enumerable, Ownable {
+contract CarMan is ERC721A, Ownable {
   using Strings for uint256;
 
   string public baseURI;
@@ -1277,7 +1278,7 @@ contract CarMan is ERC721Enumerable, Ownable {
     string memory _symbol,
     string memory _initBaseURI,
     string memory _initNotRevealedUri
-  ) ERC721(_name, _symbol) {
+  ) ERC721A(_name, _symbol) {
     baseURI = _initBaseURI;
     notRevealedUri = _initNotRevealedUri;
   }
@@ -1287,79 +1288,6 @@ contract CarMan is ERC721Enumerable, Ownable {
     return baseURI;
   }
 
-  // public
-  function vipSaleMint(uint256 _mintAmount) public {
-    require(_mintAmount > 0, "Mint Amount should be bigger than 0");
-    require((!vipSalePaused)&&(vipSaleStart <= block.timestamp), "Not Reach VIP Sale Time");
-  
-    uint256 supply = totalSupply();
-    require(_mintAmount > 0, "need to mint at least 1 NFT");
-    require(_mintAmount <= maxMintAmount, "max mint amount per session exceeded");
-    require(supply + _mintAmount <= currentPhaseMintMaxAmount, "reach current Phase NFT limit");
-    require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
-
-    require(vipMintAmount[msg.sender] != 0, "user is not VIP");
-    uint256 ownerMintedCount = addressMintedBalance[msg.sender];
-    uint256 vipMintCount = vipMintAmount[msg.sender];
- 
-    require(ownerMintedCount + _mintAmount <= vipMintCount, "max VIP Mint Amount exceeded");
-    require(ownerMintedCount + _mintAmount <= nftPerAddressLimit, "max NFT per address exceeded");
-    
-    for (uint256 i = 1; i <= _mintAmount; i++) {
-        addressMintedBalance[msg.sender]++;
-      _safeMint(msg.sender, supply + i);
-    }
-  }
-
-  function preSaleMint(uint256 _mintAmount) public payable {
-    require(_mintAmount > 0, "Mint Amount should be bigger than 0");
-    require((!preSalePaused)&&(preSaleStart <= block.timestamp), "Not Reach Pre Sale Time");
-  
-    uint256 supply = totalSupply();
-    require(_mintAmount > 0, "need to mint at least 1 NFT");
-    require(_mintAmount <= maxMintAmount, "max mint amount per session exceeded");
-    require(supply + _mintAmount <= currentPhaseMintMaxAmount, "reach current Phase NFT limit");
-    require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
-
-    if (msg.sender != owner()) {
-        if(onlyWhitelisted == true) {
-            require(isWhitelisted(msg.sender), "user is not whitelisted");
-            uint256 ownerMintedCount = addressMintedBalance[msg.sender];
-            require(ownerMintedCount + _mintAmount <= nftPerAddressLimit, "max NFT per address exceeded");
-        }
-        require(msg.value >= cost * _mintAmount, "insufficient funds");
-    }
-    
-    for (uint256 i = 1; i <= _mintAmount; i++) {
-        addressMintedBalance[msg.sender]++;
-      _safeMint(msg.sender, supply + i);
-    }
-  }
-
-  function publicSaleMint(uint256 _mintAmount) public payable {
-    require(_mintAmount > 0, "Mint Amount should be bigger than 0");
-    require((!publicSalePaused)&&(publicSaleStart <= block.timestamp), "Not Reach Public Sale Time");
-  
-    uint256 supply = totalSupply();
-    require(_mintAmount > 0, "need to mint at least 1 NFT");
-    require(_mintAmount <= maxMintAmount, "max mint amount per session exceeded");
-    require(supply + _mintAmount <= currentPhaseMintMaxAmount, "reach current Phase NFT limit");
-    require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
-
-    if (msg.sender != owner()) {
-        if(onlyWhitelisted == true) {
-            require(isWhitelisted(msg.sender), "user is not whitelisted");
-            uint256 ownerMintedCount = addressMintedBalance[msg.sender];
-            require(ownerMintedCount + _mintAmount <= nftPerAddressLimit, "max NFT per address exceeded");
-        }
-        require(msg.value >= cost * _mintAmount, "insufficient funds");
-    }
-    
-    for (uint256 i = 1; i <= _mintAmount; i++) {
-        addressMintedBalance[msg.sender]++;
-      _safeMint(msg.sender, supply + i);
-    }
-  }
   /*
   function isWhitelisted(address _user) public view returns (bool) {
     
@@ -1383,6 +1311,97 @@ contract CarMan is ERC721Enumerable, Ownable {
     return success;
   }
 
+  // public
+  function vipSaleMint(uint256 _mintAmount) public {
+    require(_mintAmount > 0, "Mint Amount should be bigger than 0");
+    require((!vipSalePaused)&&(vipSaleStart <= block.timestamp), "Not Reach VIP Sale Time");
+  
+    uint256 supply = totalSupply();
+    require(_mintAmount > 0, "need to mint at least 1 NFT");
+    require(_mintAmount <= maxMintAmount, "max mint amount per session exceeded");
+    require(supply + _mintAmount <= currentPhaseMintMaxAmount, "reach current Phase NFT limit");
+    require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
+
+    require(vipMintAmount[msg.sender] != 0, "user is not VIP");
+    uint256 ownerMintedCount = addressMintedBalance[msg.sender];
+    uint256 vipMintCount = vipMintAmount[msg.sender];
+ 
+    require(ownerMintedCount + _mintAmount <= vipMintCount, "max VIP Mint Amount exceeded");
+    require(ownerMintedCount + _mintAmount <= nftPerAddressLimit, "max NFT per address exceeded");
+    
+    /*
+    for (uint256 i = 1; i <= _mintAmount; i++) {
+        addressMintedBalance[msg.sender]++;
+      _safeMint(msg.sender, supply + i);
+    }
+    */
+    //優化
+    addressMintedBalance[msg.sender]+=_mintAmount;
+    _safeMint(msg.sender, _mintAmount);
+  }
+
+  function preSaleMint(bytes32[] calldata _proof, uint256 _mintAmount) public payable {
+    require(_mintAmount > 0, "Mint Amount should be bigger than 0");
+    require((!preSalePaused)&&(preSaleStart <= block.timestamp), "Not Reach Pre Sale Time");
+  
+    uint256 supply = totalSupply();
+    require(_mintAmount > 0, "need to mint at least 1 NFT");
+    require(_mintAmount <= maxMintAmount, "max mint amount per session exceeded");
+    require(supply + _mintAmount <= currentPhaseMintMaxAmount, "reach current Phase NFT limit");
+    require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
+
+    if (msg.sender != owner()) {
+        if(onlyWhitelisted == true) {
+            require(isWhitelisted(_proof, msg.sender), "user is not whitelisted");
+            uint256 ownerMintedCount = addressMintedBalance[msg.sender];
+            require(ownerMintedCount + _mintAmount <= nftPerAddressLimit, "max NFT per address exceeded");
+        }
+        require(msg.value >= cost * _mintAmount, "insufficient funds");
+    }
+    
+    /*
+    for (uint256 i = 1; i <= _mintAmount; i++) {
+        addressMintedBalance[msg.sender]++;
+      _safeMint(msg.sender, supply + i);
+    }
+    */
+
+    //優化
+    addressMintedBalance[msg.sender]+=_mintAmount;
+    _safeMint(msg.sender, _mintAmount);
+  }
+
+  function publicSaleMint(bytes32[] calldata _proof, uint256 _mintAmount) public payable {
+    require(_mintAmount > 0, "Mint Amount should be bigger than 0");
+    require((!publicSalePaused)&&(publicSaleStart <= block.timestamp), "Not Reach Public Sale Time");
+  
+    uint256 supply = totalSupply();
+    require(_mintAmount > 0, "need to mint at least 1 NFT");
+    require(_mintAmount <= maxMintAmount, "max mint amount per session exceeded");
+    require(supply + _mintAmount <= currentPhaseMintMaxAmount, "reach current Phase NFT limit");
+    require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
+
+    if (msg.sender != owner()) {
+        if(onlyWhitelisted == true) {
+            require(isWhitelisted(_proof, msg.sender), "user is not whitelisted");
+            uint256 ownerMintedCount = addressMintedBalance[msg.sender];
+            require(ownerMintedCount + _mintAmount <= nftPerAddressLimit, "max NFT per address exceeded");
+        }
+        require(msg.value >= cost * _mintAmount, "insufficient funds");
+    }
+    
+    /*
+    for (uint256 i = 1; i <= _mintAmount; i++) {
+        addressMintedBalance[msg.sender]++;
+      _safeMint(msg.sender, supply + i);
+    }
+    */
+    //優化
+    addressMintedBalance[msg.sender]+=_mintAmount;
+    _safeMint(msg.sender, _mintAmount);
+  }
+  
+  /*
   function walletOfOwner(address _owner) public view returns (uint256[] memory)
   {
     uint256 ownerTokenCount = balanceOf(_owner);
@@ -1391,7 +1410,7 @@ contract CarMan is ERC721Enumerable, Ownable {
       tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
     }
     return tokenIds;
-  }
+  }*/
 
   function tokenURI(uint256 tokenId) public view virtual override returns (string memory)
   {
