@@ -1250,13 +1250,14 @@ contract CarManOpt is ERC721A, Ownable {
   uint256 public maxMintAmount = 10;
   uint256 public nftPerAddressLimit = 10;
   uint256 public currentPhaseMintMaxAmount = 110;
+  //新增Merkle Tree Root變數
+  bytes32 public merkleTreeRoot;
 
   uint32 public publicSaleStart = 1647136800;
   uint32 public preSaleStart = 1646964000;
   uint32 public vipSaleStart = 1646618400;
 
-  //新增Merkle Tree Root變數
-  bytes32 public merkleTreeRoot;
+
 
   bool public publicSalePaused = true;
   bool public preSalePaused = true;
